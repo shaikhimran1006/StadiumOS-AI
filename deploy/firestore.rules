@@ -1,0 +1,249 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================================================================
+    // Helper Functions
+    // ========================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+
+    function isModerator() {
+      return isAuthenticated() && (getUserRole() == 'admin' || getUserRole() == 'moderator');
+    }
+
+    function isPlayer() {
+      return isAuthenticated() && getUserRole() == 'player';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isVerified() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.emailVerified == true;
+    }
+
+    function isNotBanned() {
+      return isAuthenticated() && !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.banned;
+    }
+
+    function canWrite() {
+      return isAuthenticated() && isNotBanned() && isVerified();
+    }
+
+    // ========================================================================
+    // Users Collection
+    // ========================================================================
+
+    match /users/{userId} {
+      // Any authenticated user can read user profiles (for leaderboards, etc.)
+      allow read: if isAuthenticated();
+
+      // Users can create their own profile
+      allow create: if isAuthenticated()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['email', 'displayName', 'role', 'createdAt'])
+        && request.resource.data.role in ['player', 'moderator', 'admin'];
+
+      // Users can update their own profile; admins can update anyone
+      allow update: if isAuthenticated() && (
+        isOwner(userId) || isAdmin()
+      );
+
+      // Only admins can delete user accounts
+      allow delete: if isAdmin();
+
+      // User preferences subcollection
+      match /preferences/{preferenceId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User stats subcollection
+      match /stats/{statId} {
+        allow read: if isAuthenticated();
+        allow write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // ========================================================================
+    // Stadiums Collection
+    // ========================================================================
+
+    match /stadiums/{stadiumId} {
+      // Everyone can read stadiums
+      allow read: if true;
+
+      // Moderators and admins can create/edit/delete stadiums
+      allow create: if canWrite() && isModerator();
+      allow update: if canWrite() && isModerator();
+      allow delete: if canWrite() && isAdmin();
+
+      // Stadium configuration subcollection
+      match /config/{configId} {
+        allow read: if true;
+        allow write: if canWrite() && isModerator();
+      }
+
+      // Stadium events subcollection
+      match /events/{eventId} {
+        allow read: if true;
+        allow create: if canWrite() && isModerator();
+        allow update: if canWrite() && (isModerator() || request.auth.uid == resource.data.organizerId);
+        allow delete: if canWrite() && isAdmin();
+      }
+    }
+
+    // ========================================================================
+    // Games Collection
+    // ========================================================================
+
+    match /games/{gameId} {
+      // Everyone can read games
+      allow read: if true;
+
+      // Moderators can create and manage games
+      allow create: if canWrite() && isModerator();
+      allow update: if canWrite() && isModerator();
+      allow delete: if canWrite() && isAdmin();
+
+      // Game scores subcollection
+      match /scores/{scoreId} {
+        allow read: if true;
+        allow write: if canWrite() && isModerator();
+      }
+
+      // Game lineups subcollection
+      match /lineups/{lineupId} {
+        allow read: if true;
+        allow write: if canWrite() && isModerator();
+      }
+
+      // Game play-by-play subcollection
+      match /plays/{playId} {
+        allow read: if true;
+        allow write: if canWrite() && isModerator();
+      }
+    }
+
+    // ========================================================================
+    // Teams Collection
+    // ========================================================================
+
+    match /teams/{teamId} {
+      // Everyone can read teams
+      allow read: if true;
+
+      // Moderators can create teams
+      allow create: if canWrite() && isModerator();
+
+      // Team managers can update their team; admins can update any team
+      allow update: if canWrite() && (
+        isModerator() ||
+        (isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/teams/$(teamId)).data.managers)
+      );
+
+      allow delete: if canWrite() && isAdmin();
+
+      // Team roster subcollection
+      match /roster/{playerId} {
+        allow read: if true;
+        allow write: if canWrite() && isModerator();
+      }
+    }
+
+    // ========================================================================
+    // Players Collection
+    // ========================================================================
+
+    match /players/{playerId} {
+      // Everyone can read player profiles
+      allow read: if true;
+
+      // Players can create their own profile
+      allow create: if canWrite() && isOwner(playerId);
+
+      // Players can update their own stats; moderators can update anyone
+      allow update: if canWrite() && (
+        isOwner(playerId) || isModerator()
+      );
+
+      allow delete: if canWrite() && isAdmin();
+    }
+
+    // ========================================================================
+    // AI Predictions Collection
+    // ========================================================================
+
+    match /predictions/{predictionId} {
+      // Authenticated users can read predictions
+      allow read: if isAuthenticated();
+
+      // System creates predictions via backend service account
+      allow create: if isAdmin();
+
+      // Moderators can update predictions
+      allow update: if canWrite() && isModerator();
+
+      // Only admins can delete predictions
+      allow delete: if canWrite() && isAdmin();
+    }
+
+    // ========================================================================
+    // Chat Messages Collection
+    // ========================================================================
+
+    match /chat/{messageId} {
+      // Authenticated users can read chat messages
+      allow read: if isAuthenticated();
+
+      // Authenticated non-banned users can send messages
+      allow create: if canWrite();
+
+      // Users can edit their own messages
+      allow update: if canWrite() && (
+        isOwner(resource.data.authorId) || isModerator()
+      );
+
+      // Users can delete their own messages; moderators can delete any
+      allow delete: if canWrite() && (
+        isOwner(resource.data.authorId) || isModerator()
+      );
+    }
+
+    // ========================================================================
+    // Analytics Events Collection (Write-only from client, read by backend)
+    // ========================================================================
+
+    match /analytics/{eventId} {
+      // Only backend reads analytics
+      allow read: if isAdmin();
+      // Authenticated users can log events
+      allow create: if canWrite();
+      // No updates or deletes from client
+      allow update, delete: if false;
+    }
+
+    // ========================================================================
+    // News/Announcements Collection
+    // ========================================================================
+
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow create: if canWrite() && isModerator();
+      allow update: if canWrite() && isModerator();
+      allow delete: if canWrite() && isAdmin();
+    }
+  }
+}

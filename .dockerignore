@@ -1,0 +1,89 @@
+# ============================================================================
+# StadiumOS AI - Docker Ignore (shared for both services)
+# ============================================================================
+
+# Version control
+.git/
+.gitignore
+.github/
+.gitlab-ci.yml
+
+# Documentation
+*.md
+LICENSE
+CHANGELOG.md
+CONTRIBUTING.md
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# CI/CD
+deploy/
+scripts/
+.github/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.venv/
+venv/
+env/
+
+# Node.js
+frontend/node_modules/
+frontend/.next/
+frontend/.nuxt/
+frontend/dist/
+frontend/build/
+frontend/.cache/
+frontend/.eslintcache
+
+# Testing
+tests/
+test/
+*_test.go
+*.test.py
+*.test.js
+*.test.ts
+*.spec.ts
+coverage/
+junit/
+
+# Documentation files
+docs/
+*.md
+!README.md
+
+# Docker
+docker-compose*.yml
+Dockerfile
+.dockerignore
+
+# Infrastructure
+Makefile
+terraform/
+*.tfstate
+.terraform/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini

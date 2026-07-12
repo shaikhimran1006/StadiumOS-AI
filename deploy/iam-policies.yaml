@@ -1,0 +1,126 @@
+# ============================================================================
+# StadiumOS AI - IAM Policies for Service Accounts
+# Apply with: gcloud projects add-iam-policy-binding PROJECT_ID --policy-file=deploy/iam-policies.yaml
+# ============================================================================
+
+# Service Accounts to Create:
+#   - stadiumos-backend@PROJECT_ID.iam.gserviceaccount.com
+#   - stadiumos-frontend@PROJECT_ID.iam.gserviceaccount.com
+#   - stadiumos-ci@PROJECT_ID.iam.gserviceaccount.com
+
+bindings:
+  # ==========================================================================
+  # Backend Service Account - Core Application
+  # ==========================================================================
+  - role: roles/datastore.user
+    members:
+      - serviceAccount:stadiumos-backend@stadiumos-ai-prod.iam.gserviceaccount.com
+    condition:
+      title: firestore_access
+      description: "Read/write access to Firestore for application data"
+      expression: |
+        resource.name.startsWith('projects/stadiumos-ai-prod/databases/(default)/documents/')
+
+  - role: roles/pubsub.publisher
+    members:
+      - serviceAccount:stadiumos-backend@stadiumos-ai-prod.iam.gserviceaccount.com
+    condition:
+      title: pubsub_publish
+      description: "Publish messages to application topics"
+      expression: |
+        resource.name.startsWith('projects/stadiumos-ai-prod/topics/')
+
+  - role: roles/pubsub.subscriber
+    members:
+      - serviceAccount:stadiumos-backend@stadiumos-ai-prod.iam.gserviceaccount.com
+    condition:
+      title: pubsub_subscribe
+      description: "Subscribe to application topics"
+      expression: |
+        resource.name.startsWith('projects/stadiumos-ai-prod/subscriptions/')
+
+  - role: roles/bigquery.dataEditor
+    members:
+      - serviceAccount:stadiumos-backend@stadiumos-ai-prod.iam.gserviceaccount.com
+    condition:
+      title: bigquery_write
+      description: "Write analytics data to BigQuery dataset"
+      expression: |
+        resource.name.startsWith('projects/stadiumos-ai-prod/datasets/stadium_analytics')
+
+  - role: roles/storage.objectViewer
+    members:
+      - serviceAccount:stadiumos-backend@stadiumos-ai-prod.iam.gserviceaccount.com
+    condition:
+      title: storage_read
+      description: "Read from asset storage buckets"
+      expression: |
+        resource.name.startsWith('projects/stadiumos-ai-prod/buckets/stadiumos-ai-prod')
+
+  - role: roles/secretmanager.secretAccessor
+    members:
+      - serviceAccount:stadiumos-backend@stadiumos-ai-prod.iam.gserviceaccount.com
+    condition:
+      title: secret_access
+      description: "Access application secrets"
+      expression: |
+        resource.name.startsWith('projects/stadiumos-ai-prod/secrets/stadiumos-')
+
+  - role: roles/logging.logWriter
+    members:
+      - serviceAccount:stadiumos-backend@stadiumos-ai-prod.iam.gserviceaccount.com
+
+  - role: roles/monitoring.metricWriter
+    members:
+      - serviceAccount:stadiumos-backend@stadiumos-ai-prod.iam.gserviceaccount.com
+
+  - role: roles/cloudtrace.agent
+    members:
+      - serviceAccount:stadiumos-backend@stadiumos-ai-prod.iam.gserviceaccount.com
+
+  # ==========================================================================
+  # Frontend Service Account
+  # ==========================================================================
+  - role: roles/logging.logWriter
+    members:
+      - serviceAccount:stadiumos-frontend@stadiumos-ai-prod.iam.gserviceaccount.com
+
+  - role: roles/monitoring.metricWriter
+    members:
+      - serviceAccount:stadiumos-frontend@stadiumos-ai-prod.iam.gserviceaccount.com
+
+  - role: roles/storage.objectViewer
+    members:
+      - serviceAccount:stadiumos-frontend@stadiumos-ai-prod.iam.gserviceaccount.com
+    condition:
+      title: frontend_storage_read
+      description: "Read static assets from storage"
+      expression: |
+        resource.name.startsWith('projects/stadiumos-ai-prod/buckets/stadiumos-ai-prod-assets')
+
+  # ==========================================================================
+  # CI/CD Service Account - Cloud Build & Deployment
+  # ==========================================================================
+  - role: roles/run.admin
+    members:
+      - serviceAccount:stadiumos-ci@stadiumos-ai-prod.iam.gserviceaccount.com
+
+  - role: roles/artifactregistry.writer
+    members:
+      - serviceAccount:stadiumos-ci@stadiumos-ai-prod.iam.gserviceaccount.com
+
+  - role: roles/secretmanager.secretAccessor
+    members:
+      - serviceAccount:stadiumos-ci@stadiumos-ai-prod.iam.gserviceaccount.com
+
+  - role: roles/iam.serviceAccountUser
+    members:
+      - serviceAccount:stadiumos-ci@stadiumos-ai-prod.iam.gserviceaccount.com
+
+  - role: roles/storage.admin
+    members:
+      - serviceAccount:stadiumos-ci@stadiumos-ai-prod.iam.gserviceaccount.com
+
+  - role: roles/logging.logWriter
+    members:
+      - serviceAccount:stadiumos-ci@stadiumos-ai-prod.iam.gserviceaccount.com

@@ -1,0 +1,134 @@
+# ============================================================================
+# StadiumOS AI - Docker Compose (Local Development)
+# ============================================================================
+
+services:
+  # --------------------------------------------------------------------------
+  # Backend Service - FastAPI
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: stadiumos-backend
+    ports:
+      - "8000:8080"
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=development
+      - FIRESTORE_EMULATOR_HOST=firestore-emulator:8080
+      - GOOGLE_CLOUD_PROJECT=stadiumos-ai-dev
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8080
+    volumes:
+      - ./backend:/app/backend:cached
+      - backend-logs:/app/logs
+    depends_on:
+      firestore-emulator:
+        condition: service_healthy
+      pubsub-emulator:
+        condition: service_healthy
+    networks:
+      - stadiumos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
+  # --------------------------------------------------------------------------
+  # Frontend Service - Nginx + React
+  # --------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NODE_ENV: development
+    container_name: stadiumos-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - stadiumos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # Firestore Emulator
+  # --------------------------------------------------------------------------
+  firestore-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    container_name: stadiumos-firestore
+    command: gcloud beta emulators firestore --host-port=0.0.0.0:8080 start
+    ports:
+      - "8180:8080"
+    environment:
+      - FIRESTORE_PROJECT=stadiumos-ai-dev
+    volumes:
+      - firestore-data:/root/.config/gcloud/emulators
+    networks:
+      - stadiumos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # Pub/Sub Emulator
+  # --------------------------------------------------------------------------
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    container_name: stadiumos-pubsub
+    command: gcloud beta emulators pubsub --host-port=0.0.0.0:8080 start
+    ports:
+      - "8280:8080"
+    environment:
+      - PUBSUB_PROJECT1=stadiumos-ai-dev,game-events:projects/stadiumos-ai-dev/topics/game-events,player-updates:projects/stadiumos-ai-dev/topics/player-updates,analytics-events:projects/stadiumos-ai-dev/topics/analytics-events
+    volumes:
+      - pubsub-data:/root/.config/gcloud/emulators
+    networks:
+      - stadiumos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  stadiumos-network:
+    driver: bridge
+    name: stadiumos-network
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  backend-logs:
+    driver: local
+  firestore-data:
+    driver: local
+  pubsub-data:
+    driver: local

@@ -1,0 +1,107 @@
+# ============================================================================
+# StadiumOS AI - Docker Compose (Production Override)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+# ============================================================================
+
+services:
+  # --------------------------------------------------------------------------
+  # Backend - Production Configuration
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: stadiumos-backend-prod
+    env_file:
+      - .env.production
+    environment:
+      - ENVIRONMENT=production
+      - GOOGLE_CLOUD_PROJECT=stadiumos-ai-prod
+    volumes: []
+    depends_on: {}
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    logging:
+      driver: gcplogs
+      options:
+        gcp-project: stadiumos-ai-prod
+        gcp-log-prefix: stadiumos-backend
+        max-size: "50m"
+        max-file: "5"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/tmp
+
+  # --------------------------------------------------------------------------
+  # Frontend - Production Configuration
+  # --------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: stadiumos-frontend-prod
+    ports: []
+    depends_on: {}
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+        reservations:
+          memory: 128M
+          cpus: "0.1"
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+    logging:
+      driver: gcplogs
+      options:
+        gcp-project: stadiumos-ai-prod
+        gcp-log-prefix: stadiumos-frontend
+        max-size: "50m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
+  # --------------------------------------------------------------------------
+  # Remove Emulators in Production
+  # --------------------------------------------------------------------------
+  firestore-emulator:
+    profiles:
+      - donotstart
+
+  pubsub-emulator:
+    profiles:
+      - donotstart

@@ -1,0 +1,84 @@
+# ============================================================================
+# StadiumOS AI - Cloud Run Frontend Service Configuration
+# Apply with: gcloud run services replace deploy/cloudrun-frontend.yaml
+# ============================================================================
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: stadiumos-frontend
+  labels:
+    app: stadiumos-frontend
+    team: platform
+    environment: production
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/launch-stage: BETA
+    run.googleapis.com/description: "StadiumOS AI Frontend Web Application"
+spec:
+  template:
+    metadata:
+      labels:
+        app: stadiumos-frontend
+        version: latest
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "10"
+        autoscaling.knative.dev/target: "80"
+        autoscaling.knative.dev/utilization: "70"
+        autoscaling.knative.dev/scaleDownDelay: "300s"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 60
+      serviceAccountName: stadiumos-frontend@stadiumos-ai-prod.iam.gserviceaccount.com
+      containers:
+        - name: frontend
+          image: us-central1-docker.pkg.dev/stadiumos-ai-prod/stadiumos/frontend:latest
+          ports:
+            - name: http1
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+            - name: PORT
+              value: "80"
+            - name: BACKEND_URL
+              value: "https://stampionship-backend-xxxx-uc.a.run.app"
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "1"
+              ephemeral-storage: "512Mi"
+            requests:
+              memory: "128Mi"
+              cpu: "0.1"
+              ephemeral-storage: "256Mi"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            timeoutSeconds: 3
+            periodSeconds: 3
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+  traffic:
+    - revisionName: ""
+      percent: 100
+      latestRevision: true

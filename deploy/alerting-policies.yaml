@@ -1,0 +1,225 @@
+# ============================================================================
+# StadiumOS AI - Cloud Monitoring Alerting Policies
+# Apply with: gcloud alpha monitoring policies create --policy-from-file=deploy/alerting-policies.yaml
+# ============================================================================
+
+alertPolicies:
+  # ==========================================================================
+  # Backend High Error Rate
+  # ==========================================================================
+  - displayName: "StadiumOS Backend - High 5xx Error Rate"
+    documentation:
+      content: |
+        The StadiumOS backend is experiencing an elevated 5xx error rate.
+        This may indicate service degradation or outages affecting users.
+      mimeType: text/markdown
+    combiner: OR
+    conditions:
+      - displayName: "5xx error rate > 5% for 5 minutes"
+        conditionThreshold:
+          filter: >
+            resource.type = "cloud_run_revision" AND
+            resource.labels.service_name = "stadiumos-backend" AND
+            metric.type = "run.googleapis.com/request_count" AND
+            metric.labels.response_code_class = "5xx"
+          comparison: COMPARISON_GT
+          thresholdValue: 0.05
+          duration: 300s
+          aggregations:
+            - alignmentPeriod: 60s
+              perSeriesAligner: ALIGN_RATE
+              crossSeriesReducer: REDUCE_SUM
+              groupByFields:
+                - resource.labels.revision_name
+            - alignmentPeriod: 60s
+              perSeriesAligner: ALIGN_RATE
+              crossSeriesReducer: REDUCE_SUM
+          trigger:
+            count: 1
+    notificationChannels: []
+    alertStrategy:
+      autoClose: 1800s
+      notificationRateLimit:
+        period: 300s
+
+  # ==========================================================================
+  # Backend High Latency
+  # ==========================================================================
+  - displayName: "StadiumOS Backend - High Response Latency"
+    documentation:
+      content: |
+        The StadiumOS backend is responding slowly.
+        p99 latency exceeds 3 seconds, indicating poor user experience.
+      mimeType: text/markdown
+    combiner: OR
+    conditions:
+      - displayName: "p99 latency > 3000ms for 5 minutes"
+        conditionThreshold:
+          filter: >
+            resource.type = "cloud_run_revision" AND
+            resource.labels.service_name = "stadiumos-backend" AND
+            metric.type = "run.googleapis.com/request_latencies"
+          comparison: COMPARISON_GT
+          thresholdValue: 3000
+          duration: 300s
+          aggregations:
+            - alignmentPeriod: 60s
+              perSeriesAligner: ALIGN_PERCENTILE_99
+              crossSeriesReducer: REDUCE_MEAN
+          trigger:
+            count: 1
+    notificationChannels: []
+    alertStrategy:
+      autoClose: 1800s
+      notificationRateLimit:
+        period: 300s
+
+  # ==========================================================================
+  # Backend Instance Count (Scale-to-zero warning)
+  # ==========================================================================
+  - displayName: "StadiumOS Backend - Scaling Alert"
+    documentation:
+      content: |
+        The StadiumOS backend has reached maximum instance count.
+        Service may be unable to handle additional load.
+      mimeType: text/markdown
+    combiner: OR
+    conditions:
+      - displayName: "Active instances >= 18 (near max of 20)"
+        conditionThreshold:
+          filter: >
+            resource.type = "cloud_run_revision" AND
+            resource.labels.service_name = "stadiumos-backend" AND
+            metric.type = "run.googleapis.com/instance_count"
+          comparison: COMPARISON_GE
+          thresholdValue: 18
+          duration: 120s
+          aggregations:
+            - alignmentPeriod: 60s
+              perSeriesAligner: ALIGN_MEAN
+              crossSeriesReducer: REDUCE_SUM
+          trigger:
+            count: 1
+    notificationChannels: []
+    alertStrategy:
+      autoClose: 1800s
+
+  # ==========================================================================
+  # Backend Container Memory Usage
+  # ==========================================================================
+  - displayName: "StadiumOS Backend - High Memory Usage"
+    documentation:
+      content: |
+        Backend container memory utilization exceeds 85%.
+        Service may be at risk of OOM kills.
+      mimeType: text/markdown
+    combiner: OR
+    conditions:
+      - displayName: "Memory utilization > 85% for 5 minutes"
+        conditionThreshold:
+          filter: >
+            resource.type = "cloud_run_revision" AND
+            resource.labels.service_name = "stadiumos-backend" AND
+            metric.type = "run.googleapis.com/container/memory/utilization"
+          comparison: COMPARISON_GT
+          thresholdValue: 0.85
+          duration: 300s
+          aggregations:
+            - alignmentPeriod: 60s
+              perSeriesAligner: ALIGN_MEAN
+              crossSeriesReducer: REDUCE_MEAN
+          trigger:
+            count: 1
+    notificationChannels: []
+    alertStrategy:
+      autoClose: 1800s
+
+  # ==========================================================================
+  # Frontend Error Rate
+  # ==========================================================================
+  - displayName: "StadiumOS Frontend - High Error Rate"
+    documentation:
+      content: |
+        The StadiumOS frontend is experiencing elevated error rates.
+        Users may be unable to access the application.
+      mimeType: text/markdown
+    combiner: OR
+    conditions:
+      - displayName: "Frontend 5xx errors > 5% for 5 minutes"
+        conditionThreshold:
+          filter: >
+            resource.type = "cloud_run_revision" AND
+            resource.labels.service_name = "stadiumos-frontend" AND
+            metric.type = "run.googleapis.com/request_count" AND
+            metric.labels.response_code_class = "5xx"
+          comparison: COMPARISON_GT
+          thresholdValue: 0.05
+          duration: 300s
+          aggregations:
+            - alignmentPeriod: 60s
+              perSeriesAligner: ALIGN_RATE
+              crossSeriesReducer: REDUCE_SUM
+          trigger:
+            count: 1
+    notificationChannels: []
+    alertStrategy:
+      autoClose: 1800s
+
+  # ==========================================================================
+  # Firestore High Latency
+  # ==========================================================================
+  - displayName: "Firestore - High Operation Latency"
+    documentation:
+      content: |
+        Firestore operations are experiencing high latency.
+        This may impact application performance.
+      mimeType: text/markdown
+    combiner: OR
+    conditions:
+      - displayName: "Firestore p95 latency > 500ms"
+        conditionThreshold:
+          filter: >
+            resource.type = "gce_project" AND
+            metric.type = "firestore.googleapis.com/document/operation_latencies"
+          comparison: COMPARISON_GT
+          thresholdValue: 500
+          duration: 300s
+          aggregations:
+            - alignmentPeriod: 60s
+              perSeriesAligner: ALIGN_PERCENTILE_95
+              crossSeriesReducer: REDUCE_MEAN
+          trigger:
+            count: 1
+    notificationChannels: []
+    alertStrategy:
+      autoClose: 1800s
+
+  # ==========================================================================
+  # Pub/Sub Unacked Messages
+  # ==========================================================================
+  - displayName: "Pub/Sub - Messages Not Being Processed"
+    documentation:
+      content: |
+        Pub/Sub subscription has a growing backlog of unacknowledged messages.
+        Event processing may be delayed or stuck.
+      mimeType: text/markdown
+    combiner: OR
+    conditions:
+      - displayName: "Unacked messages > 1000 for 10 minutes"
+        conditionThreshold:
+          filter: >
+            resource.type = "pubsub_subscription" AND
+            metric.type = "pubsub.googleapis.com/subscription/num_undelivered_messages" AND
+            resource.labels.subscription_id = starts_with("stadiumos-")
+          comparison: COMPARISON_GT
+          thresholdValue: 1000
+          duration: 600s
+          aggregations:
+            - alignmentPeriod: 300s
+              perSeriesAligner: ALIGN_MEAN
+              crossSeriesReducer: REDUCE_MAX
+          trigger:
+            count: 1
+    notificationChannels: []
+    alertStrategy:
+      autoClose: 3600s

@@ -1,0 +1,251 @@
+{
+  "schemas": [
+    {
+      "name": "game-event",
+      "type": "AVRO",
+      "definition": {
+        "type": "record",
+        "name": "GameEvent",
+        "namespace": "com.stadiumos.ai.events",
+        "doc": "Schema for game-related events published to Pub/Sub",
+        "fields": [
+          {
+            "name": "event_id",
+            "type": "string",
+            "doc": "Unique event identifier (UUID v4)"
+          },
+          {
+            "name": "event_type",
+            "type": {
+              "type": "enum",
+              "name": "EventType",
+              "symbols": [
+                "GAME_START",
+                "GAME_END",
+                "QUARTER_START",
+                "QUARTER_END",
+                "SCORE_UPDATE",
+                "PLAYER_SUBSTITUTION",
+                "INJURY_REPORT",
+                "TIMEOUT",
+                "PENALTY",
+                "OVERTIME_START"
+              ]
+            },
+            "doc": "Type of game event"
+          },
+          {
+            "name": "game_id",
+            "type": "string",
+            "doc": "Firestore document ID of the game"
+          },
+          {
+            "name": "stadium_id",
+            "type": "string",
+            "doc": "Firestore document ID of the stadium"
+          },
+          {
+            "name": "timestamp",
+            "type": "string",
+            "doc": "ISO 8601 timestamp of the event"
+          },
+          {
+            "name": "data",
+            "type": {
+              "type": "map",
+              "values": "string"
+            },
+            "default": {},
+            "doc": "Event-specific key-value data payload"
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "doc": "Source system that generated the event"
+          },
+          {
+            "name": "version",
+            "type": "string",
+            "default": "1.0",
+            "doc": "Schema version"
+          }
+        ],
+        "required": ["event_id", "event_type", "game_id", "timestamp", "source"]
+      }
+    },
+    {
+      "name": "player-update",
+      "type": "AVRO",
+      "definition": {
+        "type": "record",
+        "name": "PlayerUpdate",
+        "namespace": "com.stadiumos.ai.events",
+        "doc": "Schema for player state updates",
+        "fields": [
+          {
+            "name": "update_id",
+            "type": "string",
+            "doc": "Unique update identifier"
+          },
+          {
+            "name": "player_id",
+            "type": "string",
+            "doc": "Firestore document ID of the player"
+          },
+          {
+            "name": "update_type",
+            "type": {
+              "type": "enum",
+              "name": "UpdateType",
+              "symbols": [
+                "STATS_UPDATE",
+                "RATING_CHANGE",
+                "INJURY_STATUS",
+                "POSITION_CHANGE",
+                "FORM_UPDATE",
+                "TRAINING_RESULT"
+              ]
+            },
+            "doc": "Type of player update"
+          },
+          {
+            "name": "game_id",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "Associated game ID if applicable"
+          },
+          {
+            "name": "stats",
+            "type": {
+              "type": "map",
+              "values": ["null", "string", "int", "double"]
+            },
+            "default": {},
+            "doc": "Updated stat values"
+          },
+          {
+            "name": "previous_values",
+            "type": {
+              "type": "map",
+              "values": ["null", "string", "int", "double"]
+            },
+            "default": {},
+            "doc": "Previous stat values for diff tracking"
+          },
+          {
+            "name": "timestamp",
+            "type": "string",
+            "doc": "ISO 8601 timestamp"
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "doc": "Source system"
+          },
+          {
+            "name": "version",
+            "type": "string",
+            "default": "1.0",
+            "doc": "Schema version"
+          }
+        ],
+        "required": ["update_id", "player_id", "update_type", "timestamp", "source"]
+      }
+    },
+    {
+      "name": "analytics-event",
+      "type": "AVRO",
+      "definition": {
+        "type": "record",
+        "name": "AnalyticsEvent",
+        "namespace": "com.stadiumos.ai.events",
+        "doc": "Schema for user analytics and tracking events",
+        "fields": [
+          {
+            "name": "event_id",
+            "type": "string",
+            "doc": "Unique event identifier"
+          },
+          {
+            "name": "event_name",
+            "type": "string",
+            "doc": "Name of the analytics event"
+          },
+          {
+            "name": "user_id",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "Authenticated user ID (null for anonymous)"
+          },
+          {
+            "name": "session_id",
+            "type": "string",
+            "doc": "Client session identifier"
+          },
+          {
+            "name": "category",
+            "type": {
+              "type": "enum",
+              "name": "EventCategory",
+              "symbols": [
+                "NAVIGATION",
+                "INTERACTION",
+                "PERFORMANCE",
+                "ERROR",
+                "GAME_VIEW",
+                "CHAT",
+                "PREDICTION",
+                "SETTINGS"
+              ]
+            },
+            "doc": "Event category"
+          },
+          {
+            "name": "properties",
+            "type": {
+              "type": "map",
+              "values": "string"
+            },
+            "default": {},
+            "doc": "Event-specific properties"
+          },
+          {
+            "name": "page_url",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "URL of the page where the event occurred"
+          },
+          {
+            "name": "referrer",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "HTTP referrer"
+          },
+          {
+            "name": "user_agent",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "Browser user agent string"
+          },
+          {
+            "name": "timestamp",
+            "type": "string",
+            "doc": "ISO 8601 timestamp"
+          },
+          {
+            "name": "client_timestamp",
+            "type": "string",
+            "doc": "Client-side ISO 8601 timestamp"
+          },
+          {
+            "name": "version",
+            "type": "string",
+            "default": "1.0",
+            "doc": "Schema version"
+          }
+        ],
+        "required": ["event_id", "event_name", "session_id", "category", "timestamp", "client_timestamp"]
+      }
+    }
+  ]
+}

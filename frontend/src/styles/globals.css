@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --stadium-blue: #1a237e;
+  --stadium-blue-light: #283593;
+  --stadium-blue-dark: #0d1442;
+  --stadium-green: #2e7d32;
+  --stadium-green-light: #43a047;
+  --stadium-green-dark: #1b5e20;
+  --stadium-gold: #f9a825;
+  --stadium-gold-light: #fbc02d;
+  --stadium-gold-dark: #f57f17;
+  --dark-bg: #0a0e27;
+  --dark-surface: #111638;
+  --dark-card: #1a1f4a;
+  --dark-border: #2a2f5a;
+  --dark-hover: #242860;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: 'Inter', 'Roboto', system-ui, sans-serif;
+  background-color: var(--dark-bg);
+  color: #e2e8f0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--dark-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--dark-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dark-hover);
+}
+
+.glow-blue {
+  box-shadow: 0 0 20px rgba(26, 35, 126, 0.3);
+}
+
+.glow-green {
+  box-shadow: 0 0 20px rgba(46, 125, 50, 0.3);
+}
+
+.glow-gold {
+  box-shadow: 0 0 20px rgba(249, 168, 37, 0.3);
+}
+
+.glass-surface {
+  background: rgba(17, 22, 56, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(42, 47, 90, 0.5);
+}
+
+.gradient-stadium {
+  background: linear-gradient(135deg, #1a237e 0%, #0d1442 50%, #111638 100%);
+}
+
+.gradient-header {
+  background: linear-gradient(90deg, #1a237e 0%, #283593 100%);
+}
+
+@keyframes alertPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.alert-pulse {
+  animation: alertPulse 2s ease-in-out infinite;
+}
+
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+.typing-dot {
+  animation: typing 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}

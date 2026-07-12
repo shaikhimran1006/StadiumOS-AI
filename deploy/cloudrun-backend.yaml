@@ -1,0 +1,120 @@
+# ============================================================================
+# StadiumOS AI - Cloud Run Backend Service Configuration
+# Apply with: gcloud run services replace deploy/cloudrun-backend.yaml
+# ============================================================================
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: stadiumos-backend
+  labels:
+    app: stadiumos-backend
+    team: platform
+    environment: production
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/launch-stage: BETA
+    run.googleapis.com/description: "StadiumOS AI Backend API Service"
+spec:
+  template:
+    metadata:
+      labels:
+        app: stadiumos-backend
+        version: latest
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "20"
+        autoscaling.knative.dev/target: "80"
+        autoscaling.knative.dev/utilization: "70"
+        autoscaling.knative.dev/scaleDownDelay: "300s"
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/startup-cpu-boost: "true"
+        run.googleapis.com/vpc-access-connector: projects/stadiumos-ai-prod/locations/us-central1/connectors/stadiumos-vpc-connector
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      serviceAccountName: stadiumos-backend@stadiumos-ai-prod.iam.gserviceaccount.com
+      containers:
+        - name: backend
+          image: us-central1-docker.pkg.dev/stadiumos-ai-prod/stadiumos/backend:latest
+          ports:
+            - name: http1
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "stadiumos-ai-prod"
+            - name: PORT
+              value: "8080"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: CORS_ORIGINS
+              value: "https://stadiumos-frontend-*.run.app"
+            - name: FIRESTORE_DATABASE
+              value: "(default)"
+            - name: PUBSUB_PROJECT_ID
+              value: "stadiumos-ai-prod"
+            - name: BIGQUERY_DATASET
+              value: "stadium_analytics"
+            - name: STORAGE_BUCKET
+              value: "stadiumos-ai-prod-assets"
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stadiumos-jwt-secret
+                  key: latest
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stadiumos-encryption-key
+                  key: latest
+          resources:
+            limits:
+              memory: "2Gi"
+              cpu: "2"
+              ephemeral-storage: "1Gi"
+            requests:
+              memory: "512Mi"
+              cpu: "1"
+              ephemeral-storage: "500Mi"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+      volumeMounts:
+        - name: tmp
+          mountPath: /app/tmp
+  traffic:
+    - revisionName: ""
+      percent: 100
+      latestRevision: true

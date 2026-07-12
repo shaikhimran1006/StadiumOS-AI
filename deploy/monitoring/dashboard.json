@@ -1,0 +1,342 @@
+{
+  "displayName": "StadiumOS AI - Production Dashboard",
+  "dashboardFilters": [
+    {
+      "filter": "resource.type = 'cloud_run_revision' AND resource.labels.service_name = 'stadiumos-backend'",
+      "label": "Backend"
+    },
+    {
+      "filter": "resource.type = 'cloud_run_revision' AND resource.labels.service_name = 'stadiumos-frontend'",
+      "label": "Frontend"
+    }
+  ],
+  "gridLayout": {
+    "columns": 2,
+    "widgets": [
+      {
+        "title": "Backend Request Count",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"stadiumos-backend\" AND metric.type = \"run.googleapis.com/request_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": [
+                      "resource.labels.revision_name"
+                    ]
+                  }
+                },
+                "unitOverride": "1"
+              },
+              "legendTemplate": "${this.resource.revision_name}",
+              "minAlignmentPeriod": "60s"
+            }
+          ],
+          "timeshiftPeriod": "0s",
+          "yAxis": {
+            "label": "Requests/sec",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Backend Response Latency (p50, p95, p99)",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"stadiumos-backend\" AND metric.type = \"run.googleapis.com/request_latencies\" AND metric.labels.distribution_latency_percentile = \"50\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_50",
+                    "crossSeriesReducer": "REDUCE_MEAN"
+                  }
+                },
+                "unitOverride": "ms"
+              },
+              "legendTemplate": "p50"
+            },
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"stadiumos-backend\" AND metric.type = \"run.googleapis.com/request_latencies\" AND metric.labels.distribution_latency_percentile = \"95\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_95",
+                    "crossSeriesReducer": "REDUCE_MEAN"
+                  }
+                },
+                "unitOverride": "ms"
+              },
+              "legendTemplate": "p95"
+            },
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"stadiumos-backend\" AND metric.type = \"run.googleapis.com/request_latencies\" AND metric.labels.distribution_latency_percentile = \"99\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_99",
+                    "crossSeriesReducer": "REDUCE_MEAN"
+                  }
+                },
+                "unitOverride": "ms"
+              },
+              "legendTemplate": "p99"
+            }
+          ],
+          "timeshiftPeriod": "0s",
+          "yAxis": {
+            "label": "Latency (ms)",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Backend Active Instances",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"stadiumos-backend\" AND metric.type = \"run.googleapis.com/instance_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              }
+            }
+          ],
+          "yAxis": {
+            "label": "Instances",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Backend CPU Utilization",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"stadiumos-backend\" AND metric.type = \"run.googleapis.com/container/cpu/utilization\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_MEAN"
+                  }
+                },
+                "unitOverride": "1"
+              }
+            }
+          ],
+          "yAxis": {
+            "label": "CPU %",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Backend Memory Utilization",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"stadiumos-backend\" AND metric.type = \"run.googleapis.com/container/memory/utilization\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_MEAN"
+                  }
+                },
+                "unitOverride": "1"
+              }
+            }
+          ],
+          "yAxis": {
+            "label": "Memory %",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Backend Error Rate (5xx)",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"stadiumos-backend\" AND metric.type = \"run.googleapis.com/request_count\" AND metric.labels.response_code_class = \"5xx\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              }
+            }
+          ],
+          "yAxis": {
+            "label": "Errors/sec",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Frontend Request Count",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"stadiumos-frontend\" AND metric.type = \"run.googleapis.com/request_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              }
+            }
+          ],
+          "yAxis": {
+            "label": "Requests/sec",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Firestore Read/Write Operations",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"gce_project\" AND metric.type = \"firestore.googleapis.com/document/read_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "300s",
+                    "perSeriesAligner": "ALIGN_RATE",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              },
+              "legendTemplate": "Reads"
+            },
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"gce_project\" AND metric.type = \"firestore.googleapis.com/document/write_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "300s",
+                    "perSeriesAligner": "ALIGN_RATE",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              },
+              "legendTemplate": "Writes"
+            }
+          ],
+          "yAxis": {
+            "label": "Ops/sec",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Pub/Sub Message Publishing Rate",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"pubsub_topic\" AND metric.type = \"pubsub.googleapis.com/topic/send_message_operation_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": [
+                      "resource.labels.topic_id"
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "yAxis": {
+            "label": "Messages/sec",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "BigQuery Inserted Rows",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"bigquery_dataset\" AND metric.type = \"bigquery.googleapis.com/storage/inserted_row_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "300s",
+                    "perSeriesAligner": "ALIGN_RATE",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              }
+            }
+          ],
+          "yAxis": {
+            "label": "Rows/sec",
+            "scale": "LINEAR"
+          }
+        }
+      }
+    ]
+  },
+  "labels": {
+    "environment": "production",
+    "team": "platform"
+  },
+  "mosaicLayout": {
+    "tiles": []
+  }
+}
